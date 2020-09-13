@@ -1,0 +1,14 @@
+#!/bin/sh
+
+## build essential tool (compiler and so on)
+
+case "$(uname -s 2>/dev/null)" in
+	Darwin)
+		if ! command -v clang >/dev/null 2>&1; then
+			printf 'installing command-line tool ... \n'
+			xcode-select --install
+		fi
+		;;
+esac
+
+# vim: set ft=sh ts=8 noet :

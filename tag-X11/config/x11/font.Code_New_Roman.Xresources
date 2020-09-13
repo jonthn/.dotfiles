@@ -1,0 +1,18 @@
+xterm*faceName: Code New Roman
+xterm*faceSize: 13
+
+! VT Font Menu: Unreadable
+xterm*faceSize1: 8
+! VT font menu: Tiny
+xterm*faceSize2: 10
+! VT font menu: Medium
+xterm*faceSize3: 12
+! VT font menu: Large
+xterm*faceSize4: 16
+! VT font menu: Huge
+xterm*faceSize5: 22
+
+Rxvt*font:  xft:Code New Roman:autohint=true:pixelsize=13
+Rxvt*boldFont:  xft:Code New Roman:bold:autohint=true:pixelsize=13
+Rxvt*italicFont:  xft:Code New Roman:italic:autohint=true:pixelsize=13
+Rxvt*boldItalicFont:  xft:Code New Roman:bold:italic:autohint=true:pixelsize=13

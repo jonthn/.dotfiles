@@ -1,0 +1,18 @@
+xterm*faceName: Hack
+xterm*faceSize: 13
+
+! VT Font Menu: Unreadable
+xterm*faceSize1: 8
+! VT font menu: Tiny
+xterm*faceSize2: 10
+! VT font menu: Medium
+xterm*faceSize3: 12
+! VT font menu: Large
+xterm*faceSize4: 16
+! VT font menu: Huge
+xterm*faceSize5: 22
+
+Rxvt*font:  xft:Hack:autohint=true:pixelsize=13
+Rxvt*boldFont:  xft:Hack:bold:autohint=true:pixelsize=13
+Rxvt*italicFont:  xft:Hack:italic:autohint=true:pixelsize=13
+Rxvt*boldItalicFont:  xft:Hack:bold:italic:autohint=true:pixelsize=13

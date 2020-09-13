@@ -1,0 +1,3 @@
+ProxyCommand nc -x ${rawvalue} %h %p
+
+#  vim: set ft=sshconfig ts=8 sw=8 tw=0 noet :

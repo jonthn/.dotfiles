@@ -1,0 +1,44 @@
+---
+packages:
+  -
+    name : pkg_rolling-replace
+    dir : pkgtools/pkg_rolling-replace
+  -
+    name : tmux
+    dir : misc/tmux
+  -
+    name : mozilla-root-certificates
+    dir : security/mozilla-rootcerts
+  -
+    name : mksh
+    dir : shells/mksh
+  -
+    name : dash
+    dir : shells/dash
+  -
+    name : git
+    dir : devel/git
+  -
+    name : p7zip
+    dir : archivers/p7zip
+  -
+    name : vim
+    dir : editors/vim
+  -
+    name : nmap
+    dir : net/nmap
+  -
+    name : lftp
+    dir : net/lftp
+  -
+    name : pv
+    dir : sysutils/pv
+  -
+    name : drill
+    dir : net/drill
+  -
+    name : Python
+    dir : lang/python38
+  -
+    name : neovim
+    dir : wip/neovim-git

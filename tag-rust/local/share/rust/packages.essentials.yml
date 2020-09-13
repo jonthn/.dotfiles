@@ -1,0 +1,26 @@
+---
+packages:
+  -
+    name : ytop
+    args : --git
+    args : https://github.com/cjbassi/ytop
+  -
+    name : ripgrep
+  -
+    name : pijul
+  -
+    name : fd-find
+  -
+    name : exa
+  -
+    name : bspl
+  -
+    name : tokei
+  -
+    name : tin-summer
+  -
+    name : git-delta
+  -
+    name : repoch
+  -
+    name : just

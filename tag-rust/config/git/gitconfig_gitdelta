@@ -1,0 +1,4 @@
+[core]
+	pager = delta --dark --file-color="cyan" --hunk-color="green"
+
+;  vim: set ft=gitconfig ts=8 sw=8 tw=0 noet :

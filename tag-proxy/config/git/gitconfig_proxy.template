@@ -1,0 +1,11 @@
+[http]
+	proxy = ${value}
+
+[core]
+	gitproxy = git-proxyer
+
+[socks]
+	proxy = ${rawvalue}
+
+
+;  vim: set ft=gitconfig ts=8 sw=8 tw=0 noet :

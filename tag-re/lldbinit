@@ -1,0 +1,4 @@
+command script import ~/.config/lldb/lldbinit.py
+command script import ~/.config/lldb/disassemble.py
+
+settings set prompt 'lldb // '

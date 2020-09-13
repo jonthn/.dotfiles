@@ -1,0 +1,26 @@
+---
+packages:
+  -
+    name : cscope
+    dir : devel/cscope
+  -
+    name : dhex
+    dir : editors/dhex
+  -
+    name : ctags
+    dir : wip/ctags-git
+  -
+    name : CMake
+    dir : devel/cmake
+  -
+    name : Automake
+    dir : devel/automake
+  -
+    name : Autoconf
+    dir : devel/autoconf
+  -
+    name : pkglint
+    dir : pkgtools/pkglint
+  -
+    name : pkgdiff
+    dir : pkgtools/pkgdiff

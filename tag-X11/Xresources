@@ -1,0 +1,2 @@
+#include ".config/x11/color.Xresources"
+#include ".config/x11/font.Xresources"

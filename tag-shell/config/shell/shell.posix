@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Prompt Dash / POSIX shell {{{
+
+_prompt_posix_setup() {
+	: "${USER=$(id -un 2>/dev/null)}" "${HOSTNAME=$(uname -n 2>/dev/null)}"
+	export PS1='$HOSTNAME :: $PWD'"$(printf "\n")"' \$ '
+}
+
+# }}}
+
+# Dash/POSIX sh vendor specific  {{{
+
+set -o emacs                 # emacs bindings
+
+# }}}
+
+# vim: set ft=sh ts=8 sw=8 tw=0 noet :

@@ -1,0 +1,68 @@
+[core]
+	whitespace = space-before-tab,indent-with-non-tab,trailing-space
+	# whitespace = space-before-tab,trailing-space,-indent-with-non-tab
+	excludesfile = gitignore
+	editor = vim
+
+[advice]
+	implicitIdentity = true
+
+[merge]
+	tool = vimdiff
+	stat = true
+
+[color]
+	ui = auto
+
+[color "branch"]
+	current = yellow reverse
+	local = yellow
+	remote = green
+[color "diff"]
+	meta = yellow bold
+	frag = magenta bold
+	old = red bold
+	new = green bold
+	whitespace = red reverse
+[color "status"]
+	added = yellow
+	changed = green
+	untracked = cyan
+
+[alias]
+	dc = diff --cached
+	st = status
+	stu= status --untracked-files=no
+	ci = commit
+	co = checkout
+	hist = log --pretty=format:'%Cred%h%Creset %Cgreen%ad%Creset | %s %C(yellow)%d%Creset %C(bold blue)<%an>%Creset' --graph --date=short --abbrev-commit
+	ll = log --pretty=format:'%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]' --decorate --numstat
+	lg = log -p
+	lo = log --stat --summary --decorate
+	lol = log --graph --decorate --pretty=oneline --abbrev-commit
+	lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
+	wspace = !sed -i 's/[ \t]*$//'
+	wtf = !"git fetch -v ; wtf-git"
+
+[push]
+	default = matching
+
+[branch]
+	autosetuprebase = always
+
+[diff]
+	mnemonicprefix = true
+	renames = copies
+
+[include]
+	; include proxy special settings in case this file exists
+	path = gitconfig_proxy
+	; include git-delta settings in case this file exists
+	path = gitconfig_delta
+
+; force user to set its identity for each repo if he doesn't use (of course)
+;  git config --global
+[user]
+	useConfigOnly = true
+
+;  vim: set ft=gitconfig ts=8 sw=8 tw=0 noet :
