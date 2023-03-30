@@ -65,14 +65,14 @@ _prompt_bash_setup() {
 
 	start_code="\["
 	end_code="\]"
-	user_color=$start_code$(__escape_code cyan)$end_code
-	host_color=$start_code$(__escape_code magenta)$end_code
-	pwd_color=$start_code$(__escape_code green)$end_code
-	vcs_subdir_color=$start_code$(__escape_code yellow)$end_code
-	vcs_branch_color=$start_code$(__escape_code light_blue)$end_code
-	prompt_error_color=$start_code$(__escape_code light_red)$end_code
-	prompt_ok_color=$start_code$(__escape_code green)$end_code
-	rst=$start_code$(__escape_code reset)$end_code
+	user_color=$start_code$(terminal_color_code cyan 2>/dev/null)$end_code
+	host_color=$start_code$(terminal_color_code magenta 2>/dev/null)$end_code
+	pwd_color=$start_code$(terminal_color_code green 2>/dev/null)$end_code
+	vcs_subdir_color=$start_code$(terminal_color_code yellow 2>/dev/null)$end_code
+	vcs_branch_color=$start_code$(terminal_color_code light_blue 2>/dev/null)$end_code
+	prompt_error_color=$start_code$(terminal_color_code light_red 2>/dev/null)$end_code
+	prompt_ok_color=$start_code$(terminal_color_code green 2>/dev/null)$end_code
+	rst=$start_code$(terminal_color_code reset 2>/dev/null)$end_code
 
 	PROMPT_COMMAND=_prompt_bash_precmd
 
@@ -89,3 +89,19 @@ _prompt_bash_setup() {
 }
 
 # }}}
+
+if ((BASH_VERSINFO[0] >= 4)); then
+
+_edit_wo_executing() {
+	local editor="${EDITOR:-nano}"
+	tmpf="$(mktemp)"
+	printf '%s\n' "$READLINE_LINE" > "$tmpf"
+	"$editor" "$tmpf"
+	READLINE_LINE="$(<"$tmpf")"
+	READLINE_POINT="${#READLINE_LINE}"
+	rm "$tmpf"
+}
+
+bind -x '"\C-x\C-e":_edit_wo_executing'
+
+fi

@@ -11,6 +11,9 @@
 	tool = vimdiff
 	stat = true
 
+[diff]
+	algorithm = minimal
+
 [color]
 	ui = auto
 
@@ -30,10 +33,12 @@
 	untracked = cyan
 
 [alias]
+	ka = add --patch # stage commit chunk by chunk
 	dc = diff --cached
 	st = status
 	stu= status --untracked-files=no
 	ci = commit
+	cia = commit --amend --no-edit
 	co = checkout
 	hist = log --pretty=format:'%Cred%h%Creset %Cgreen%ad%Creset | %s %C(yellow)%d%Creset %C(bold blue)<%an>%Creset' --graph --date=short --abbrev-commit
 	ll = log --pretty=format:'%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]' --decorate --numstat
@@ -57,8 +62,6 @@
 [include]
 	; include proxy special settings in case this file exists
 	path = gitconfig_proxy
-	; include git-delta settings in case this file exists
-	path = gitconfig_delta
 
 ; force user to set its identity for each repo if he doesn't use (of course)
 ;  git config --global

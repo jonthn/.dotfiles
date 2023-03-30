@@ -1,4 +1,4 @@
-xterm*faceName: ProggyDotted
+xterm*faceName: Hack
 xterm*faceSize: 13
 
 ! VT Font Menu: Unreadable
@@ -12,7 +12,7 @@ xterm*faceSize4: 16
 ! VT font menu: Huge
 xterm*faceSize5: 22
 
-Rxvt*font:  xft:ProggyDotted:autohint=true:pixelsize=13
-Rxvt*boldFont:  xft:ProggyDotted:bold:autohint=true:pixelsize=13
-Rxvt*italicFont:  xft:ProggyDotted:italic:autohint=true:pixelsize=13
-Rxvt*boldItalicFont:  xft:ProggyDotted:bold:italic:autohint=true:pixelsize=13
+Rxvt*font:  xft:Hack:autohint=true:pixelsize=13
+Rxvt*boldFont:  xft:Hack:bold:autohint=true:pixelsize=13
+Rxvt*italicFont:  xft:Hack:italic:autohint=true:pixelsize=13
+Rxvt*boldItalicFont:  xft:Hack:bold:italic:autohint=true:pixelsize=13

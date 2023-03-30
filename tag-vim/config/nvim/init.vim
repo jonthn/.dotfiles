@@ -1,7 +1,6 @@
 " follow the :options order
 
-
-" 1. important {{{
+" 1 important {{{
 
 scriptencoding utf-8
 
@@ -10,7 +9,12 @@ scriptencoding utf-8
 if empty($XDG_CONFIG_HOME)
 	let $XDG_CONFIG_HOME = $HOME.'/.config'
 endif
+if empty($XDG_STATE_HOME)
+	echohl WarningMsg | echomsg "empty variable XDG_STATE_HOME" | echohl NONE
+	let $XDG_STATE_HOME = $HOME.'/.local/state'
+endif
 if empty($XDG_CACHE_HOME)
+	echohl WarningMsg | echomsg "empty variable XDG_CACHE_HOME" | echohl NONE
 	let $XDG_CACHE_HOME = $HOME.'/.cache'
 endif
 if empty($XDG_DATA_HOME)
@@ -18,9 +22,13 @@ if empty($XDG_DATA_HOME)
 endif
 
 if has('nvim')
-	let $XDG_CACHE_BASEDIR = $XDG_CACHE_HOME.'/nvim'
+	let $XDG_STATE_VIM = $XDG_STATE_HOME.'/nvim'
 else
-	let $XDG_CACHE_BASEDIR = $XDG_CACHE_HOME.'/vim'
+	let $XDG_STATE_VIM = $XDG_STATE_HOME.'/vim'
+endif
+
+if has('nvim')
+	set runtimepath^=$XDG_CONFIG_HOME/nvim/site
 endif
 
 if !isdirectory($XDG_DATA_HOME)
@@ -86,17 +94,46 @@ set smartcase
 
 " In visual mode when you press * or # to search for the current selection
 
-if has('timers')
-	" Blink 2 times with 75ms interval
-	noremap <expr> <plug>(slash-after) 'zz'.Slash_blink(2, 75)
-else
-	noremap <plug>(slash-after) zz
-endif
+"" Visual selection into search
+"
+" Über useful
+"  this function helps for search of the visually selected text
+"       then it's possible to replace this text by doing :%s//replace/
+"
+" it returns a representation of the selected text suitable for use as a
+"  search pattern
+"
+" -romainl- is the author
+"
+function! s:VisualGetSelection() abort
+	let old_reg = getreg("v")
+	normal! gv"vy
+	let raw_search = getreg("v")
+	call setreg("v", old_reg)
+	return substitute(escape(raw_search, '\/.*$^~[]'), "\n", '\\n', "g")
+endfunction
 
+xnoremap * :<C-u>let @/= <SID>VisualGetSelection()<CR>/<C-R>=@/<CR><CR>
+xnoremap # :<C-u>let @/= <SID>VisualGetSelection()<CR>?<C-R>=@/<CR><CR>
 
-set errorformat^=%f:%l:%c\ %m
 " :g/foo/# but persistent (see :global)
-command! -nargs=1 Gl lgetexpr filter(map(getline(1,'$'), {key, val -> expand("%") . ":" . (key + 1) . ":1 " . val }), { idx, val -> val =~ <q-args> })
+command! -bang -nargs=1 Gl call setloclist(0, [], ' ',
+            \ {'title': 'Global ' .. <q-args>,
+            \  'efm':   '%f:%l\ %m,%f:%l',
+            \  'lines': execute('g<bang>/' .. <q-args> .. '/#')
+            \           ->split('\n')
+            \           ->map({_, val -> expand("%") .. ":" .. trim(val, 1)})
+            \ }) | lclose | lwindow
+
+
+nnoremap <leader>S :Gl 
+
+
+" search in all buffers but using the file content on-disk
+" nnoremap <leader>B :cex []<BAR>silent bufdo vimgrepadd @@g %<BAR>cw<s-left><s-left><right>
+"  prefer to use :SearchBufs but it requires setting a pattern in current
+"  buffer first
+nnoremap <leader>B :SearchBufs<cr>
 
 " function : hack <cr> to make list-like commands more intuitive {{{
 "  (details) https://gist.github.com/romainl/047aca21e338df7ccf771f96858edb86
@@ -155,6 +192,10 @@ cnoremap <expr> <cr> <sid>ccr()
 
 " 3 tags {{{
 
+if has('path_extra')
+  setglobal tags-=./tags tags-=./tags; tags^=./tags;
+endif
+
 " jump to a tag/help/.. using Control-@
 map <C-@>   <C-]>
 
@@ -193,9 +234,86 @@ set number
 
 " 5 syntax, highlighting and spelling {{{
 
+if !has('nvim') && has('termguicolors') && $TERM_PROGRAM != 'Apple_Terminal'
+        " set foreground color
+	let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
+	" set t_8f=^[[38;2;%lu;%lu;%lum
+        " set background color
+	let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
+	" set t_8b=^[[48;2;%lu;%lu;%lum
+endif
+
+" italic
+let &t_ZH="\e[3m"
+let &t_ZR="\e[23m"
+
+if has('nvim') || (!has('nvim') && has('termguicolors') && $TERM_PROGRAM != 'Apple_Terminal')
+	set termguicolors
+endif
+
+if exists('g:terminal_ansi_colors')
+	\ && !(has('gui_running') || (has('termguicolors') && &termguicolors))
+	unlet g:terminal_ansi_colors
+endif
+
+" 'default' colorschemes
+let s:colorschemes_default = [ 'habamax', 'peachpuff', 'slate', 'desert', 'delek' ]
+
+
+let s:colorschemes_dark = [
+			\ 'base16-apprentice',
+			\ 'base16-atlas',
+			\ 'base16-circus',
+			\ 'base16-danqing',
+			\ 'base16-darcula',
+			\ 'base16-espresso',
+			\ 'base16-eva-dim',
+			\ 'base16-gotham',
+			\ 'base16-gruvbox-dark-pale',
+			\ 'base16-espresso',
+			\ 'base16-ia-dark',
+			\ 'base16-materia',
+			\ 'base16-monokai',
+			\ 'base16-nord',
+			\ 'base16-solarized-dark',
+			\ 'base16-ayu-mirage',
+			\ 'base16-tender'
+			\ ]
+
+
+let s:colorschemes = [
+			\ 'base16-atlas',
+			\ 'base16-espresso',
+			\ 'base16-ia-dark',
+			\ 'base16-gruvbox-dark-pale',
+			\ 'base16-ia-light',
+			\ 'base16-sakura',
+			\ 'base16-solarized-light',
+			\ 'base16-circus',
+			\ 'base16-danqing',
+			\ 'base16-monokai',
+			\ 'base16-eva-dim',
+			\ 'base16-materia',
+			\ 'base16-nord',
+			\ 'base16-solarized-dark',
+			\ 'base16-darcula',
+			\ 'base16-apprentice',
+			\ 'base16-ayu-mirage',
+			\ 'base16-gotham',
+			\ ]
+			" \ 'base16-atelier-cave-light',
+			" \ 'base16-nord', " comment too-low contrast
+			" \ 'base16-espresso', " search highlight too subtle
+			" \ 'base16-tender',  " comment too dark, search highlight too subtle
+			" \ 'base16-onedark',
+			" \ 'base16-woodland',
+			" \ 'base16-monokai',
+			" \ 'base16-bespin',
+			" \ 'base16-snazzy',
+
 " function : load colorscheme from a list {{{
 "
-function! s:loadcolorscheme(schemes) abort
+function! s:loadcolorscheme(schemes, show) abort
 	for l:scheme in a:schemes
 		try
 			execute "colorscheme" l:scheme
@@ -203,6 +321,9 @@ function! s:loadcolorscheme(schemes) abort
 		catch
 		endtry
 	endfor
+	if a:show
+		echo g:colors_name
+	endif
 endfunction
 " }}}
 
@@ -216,22 +337,19 @@ function! s:adapt_colorscheme(...) abort
 	"  - dark
 	"  - light
 	let l:force_type = get(a:, 1, 'dynamic')
-
-	let l:colorschemes = [ 'zellner', 'morning' ]
-	if !has('gui_running') && !((&t_Co == 88) || (&t_Co == 256))
-		call insert(l:colorschemes, 'slate')
-	endif
+	let l:iter = get(a:, 2, 'no_iter')
 
 	let l:sel_background='dark'
 
 	if force_type == "dynamic"
 		if strftime('%H') >= 9 && strftime('%H') < 17
-			let l:sel_background='light'
+			let l:sel_background='dark'
+			" let l:sel_background='light'
 		else
 			let l:sel_background='dark'
 		endif
 	elseif force_type == "toggle"
-		let l:sel_background=( &background == "dark"? "light" : "dark" )
+		let l:sel_background=( &background == "dark" ? "light" : "dark" )
 	elseif force_type == "dark"
 		let l:sel_background='dark'
 	elseif force_type == "light"
@@ -243,32 +361,52 @@ function! s:adapt_colorscheme(...) abort
 	redir END
 	let l:current_colorscheme = substitute(l:current_colorscheme, "\n", "", "g")
 
-	let l:require_dark_cs = [ 'tender' , 'monokai_pro' ]
-	let l:cs = [ 'cosmic_latte', 'snow', 'tender', 'monokai_pro', 'seoul256' , 'two-firewatch', 'hemisu' ]
-	let l:colorschemes = l:cs + l:colorschemes
+	let l:colorschemes = s:colorschemes + s:colorschemes_default
 
-	if 'dark' == l:sel_background
-		" nothing to filter
-	elseif "light" == l:sel_background
-		call filter(l:colorschemes, '0 <= index(l:require_dark_cs, v:val) ? 0 : 1')
+	" echohl ErrorMsg | echomsg "List colorscheme(s) " . join(l:colorschemes, ':') | echohl NONE
+
+	if empty($COLORTERM) || (!has('nvim') && !has('termguicolors') && $TERM_PROGRAM == 'Apple_Terminal')
+		call filter(l:colorschemes, '0 <= index(s:colorschemes_default, v:val) ? 1 : 0')
+	elseif 'dark' == l:sel_background
+		call filter(l:colorschemes, '0 <= index(s:colorschemes_dark, v:val) ? 1 : 0')
+	elseif 'light' == l:sel_background
+		call filter(l:colorschemes, '0 <= index(s:colorschemes_dark, v:val) ? 0 : 1')
+	endif
+
+	" if empty($COLORTERM) || (!has('nvim') && !has('termguicolors'))
+	" 	call filter(l:colorschemes, '0 <= index(s:colorschemes_require_truecolors_vim, v:val) ? 0 : 1')
+	" endif
+
+	" echohl ErrorMsg | echomsg "List colorscheme(s) " . join(l:colorschemes, ':') | echohl NONE
+
+	let l:show = 0
+	if 'next' == l:iter
+		let l:current = index(l:colorschemes, g:colors_name)
+		if -1 != l:current
+			let l:colorschemes = l:colorschemes[l:current + 1 : ] + l:colorschemes
+		endif
+		let l:show = 1
 	endif
 
 	" apply settings
 	let &background = l:sel_background
 	" echohl ErrorMsg | echomsg "List colorscheme(s) " . join(l:colorschemes, ':') | echohl NONE
-	call <sid>loadcolorscheme(l:colorschemes)
-
-	" Useful for demonstration
-	":colorscheme shoji_niji
+	call <sid>loadcolorscheme(l:colorschemes, l:show)
 
 endfunction
 " }}}
 
+command! ColorschemeNext call s:adapt_colorscheme('dynamic', 'next')
+command! ColorschemeNextDark call s:adapt_colorscheme('dark', 'next')
+command! ColorschemeNextLight call s:adapt_colorscheme('light', 'next')
+command! ColorschemeAdapt call s:adapt_colorscheme()
+command! ColorschemeToggle call s:adapt_colorscheme('toggle')
+command! ColorschemeDark call s:adapt_colorscheme('dark')
+command! ColorschemeLight call s:adapt_colorscheme('light')
 command! ThemeAdapt call s:adapt_colorscheme()
 command! ThemeToggle call s:adapt_colorscheme('toggle')
 command! ThemeDark call s:adapt_colorscheme('dark')
 command! ThemeLight call s:adapt_colorscheme('light')
-command! ThemeDemo colorscheme shoji_niji
 
 filetype plugin indent on
 
@@ -292,6 +430,15 @@ if has('syntax')
 	command! SyntaxIdentify call SyntaxDescribeCursor()
 endif
 
+function! s:customise_colorscheme() abort
+	highlight Comment cterm=italic gui=italic
+endfunction
+
+if has("autocmd")
+	autocmd vimrc ColorScheme * call <SID>customise_colorscheme()
+endif
+
+
 " syntax coloring lines that are too long just slows down the world
 if has('extra_search')
 	" highlight search terms
@@ -304,7 +451,7 @@ if exists('+colorcolumn')
 
 	function! s:colorcolumn_colorscheme() abort
 		if !hlexists("ColorColumn") && hlexists("Error")
-			highlight! link  ColorColumn Error
+			highlight! link ColorColumn Error
 		endif
 	endfunction
 
@@ -849,7 +996,79 @@ if &term =~ '256color'
 endif
 
 if has('nvim') || has('terminal')
+	function! TabTogTerm()
+		let l:OpenTerm = {x -> x
+					\  ? { -> execute('botright 15 split +term') }
+					\  : { -> execute('botright term ++rows=15') }
+					\ }(has('nvim'))
+		let term = gettabvar(tabpagenr(), 'term',
+					\ {'main': -1, 'winnr': -1, 'bufnr': -1})
+		if ! bufexists(term.bufnr)
+			call l:OpenTerm()
+			call settabvar(tabpagenr(), 'term',
+						\ {'main': winnr('#'), 'winnr': winnr(), 'bufnr': bufnr()})
+			exe 'tnoremap <buffer> <leader>y <cmd>' . t:term.main . ' wincmd w<cr>'
+			" exe 'tnoremap <buffer> <c-d>     <cmd>wincmd c<cr>'
+			setl winheight=15
+		else
+			if ! len(filter(tabpagebuflist(), {_,x -> x == term.bufnr}))
+				exe 'botright 15 split +b\ ' . term.bufnr
+			else
+				exe term.winnr . ' wincmd w'
+			endif
+		endif
+	endfunction
+	nnoremap <silent> <leader>y <cmd>call TabTogTerm()<cr>
+endif
+
+if has('nvim') || has('terminal')
 	tnoremap <Esc> <c-\><c-n>
+	if ! has('nvim')
+		set termwinkey=<C-z>
+	endif
+endif
+
+if has('terminal') && has('nvim')
+	augroup Term
+		autocmd!
+		autocmd TermClose * ++nested stopinsert | au Term TermEnter <buffer> stopinsert
+	augroup end
+
+	function! s:TermEnter(_)
+		if getbufvar(bufnr(), 'term_insert', 0)
+			startinsert
+			call setbufvar(bufnr(), 'term_insert', 0)
+		endif
+	endfunction
+
+	function! <SID>TermExec(cmd)
+		let b:term_insert = 1
+		execute a:cmd
+	endfunction
+
+	augroup Term
+		autocmd CmdlineLeave,WinEnter,BufWinEnter * call timer_start(0, function('s:TermEnter'), {})
+	augroup end
+
+	tnoremap <silent> <C-W>.      <C-W>
+	tnoremap <silent> <C-W><C-.>  <C-W>
+	tnoremap <silent> <C-W><C-\>  <C-\>
+	tnoremap <silent> <C-W>N      <C-\><C-N>
+	tnoremap <silent> <C-W>:      <C-\><C-N>:call <SID>TermExec('call feedkeys(":")')<CR>
+	tnoremap <silent> <C-W><C-W>  <cmd>call <SID>TermExec('wincmd w')<CR>
+	tnoremap <silent> <C-W>h      <cmd>call <SID>TermExec('wincmd h')<CR>
+	tnoremap <silent> <C-W>j      <cmd>call <SID>TermExec('wincmd j')<CR>
+	tnoremap <silent> <C-W>k      <cmd>call <SID>TermExec('wincmd k')<CR>
+	tnoremap <silent> <C-W>l      <cmd>call <SID>TermExec('wincmd l')<CR>
+	tnoremap <silent> <C-W><C-H>  <cmd>call <SID>TermExec('wincmd h')<CR>
+	tnoremap <silent> <C-W><C-J>  <cmd>call <SID>TermExec('wincmd j')<CR>
+	tnoremap <silent> <C-W><C-K>  <cmd>call <SID>TermExec('wincmd k')<CR>
+	tnoremap <silent> <C-W><C-L>  <cmd>call <SID>TermExec('wincmd l')<CR>
+	tnoremap <silent> <C-W>gt     <cmd>call <SID>TermExec('tabn')<CR>
+	tnoremap <silent> <C-W>gT     <cmd>call <SID>TermExec('tabp')<CR>
+
+	tnoremap <S-PageUp>   <C-\><C-N><C-B>
+	tnoremap <S-PageDown> <C-\><C-N><C-F>
 endif
 
 " }}}
@@ -866,7 +1085,10 @@ endif
 " 10 GUI {{{
 
 if has('gui_running')
-	set guifont=Hack:h12,Code\ New\ Roman:h13,ProggyDotted:h13,Input:h14,Fira\ Code:h12
+	if !has('gui_vimr')
+		set guifont=Victor_Mono:h11,Input:h12,Hack:h13
+		" set guifont=Anonymous_Pro:h14,Victor_Mono:h11,Monoflow:h12,Iosevka_SS18:h14,Input:h12,Hack:h13
+	endif
 endif
 
 " }}}
@@ -953,7 +1175,7 @@ let b:match_ignorecase = 1
 
 if has('insert_expand')
 	" don't look in current file and includes files
-	set complete-=i
+	" set complete-=i
 	" completion options
 	set completeopt=menu,menuone,longest
 	" limit popup menu height
@@ -1004,16 +1226,11 @@ endif
 " 17 diff mode {{{
 
 if has('diff')
-	" diff in vertical and space is a change
-	try
-		set diffopt+=iwhite
-	catch /E474:/
-	endtry
-	try
-		set diffopt+=vertical
-	catch
-	endtry
+	set diffopt-=internal " internal is not a supported value for diffopt
+	set diffopt+=iwhite
+	set diffopt+=vertical
 endif
+
 
 " Convenient command to see the difference between the current buffer and the
 " file it was loaded from, thus the changes you made.
@@ -1027,7 +1244,7 @@ endif
 command! -range DG '<,'>diffget
 command! -range DP '<,'>diffput
 xnoremap dp :diffput<cr>
-xnoremap do :diffget<cr>
+xnoremap dg :diffget<cr>
 
 nnoremap <C-k> [c
 nnoremap <C-j> ]c
@@ -1112,7 +1329,7 @@ command! Modeline call <SID>AppendModeline()
 
 set fileformats+=mac
 
-let s:backup_dir=$XDG_CACHE_BASEDIR . "/backup"
+let s:backup_dir=$XDG_STATE_VIM . "/backup"
 if !isdirectory(s:backup_dir)
 	if exists("*mkdir")
 		call mkdir(s:backup_dir, 'p')
@@ -1120,7 +1337,7 @@ if !isdirectory(s:backup_dir)
 endif
 
 if isdirectory(s:backup_dir)
-	set backupdir=$XDG_CACHE_BASEDIR/backup//,/tmp//
+	set backupdir=$XDG_STATE_VIM/backup//,/tmp//
 endif
 
 if exists('+undofile')
@@ -1176,7 +1393,7 @@ autocmd vimrc BufNewFile * nested call s:filelinecol()
 
 " 20 the swap file {{{
 
-let s:swap_dir=$XDG_CACHE_BASEDIR . "/swap"
+let s:swap_dir=$XDG_STATE_VIM . "/swap"
 if !isdirectory(s:swap_dir)
 	if exists("*mkdir")
 		call mkdir(s:swap_dir, 'p')
@@ -1185,7 +1402,7 @@ endif
 
 if isdirectory(s:swap_dir)
 	" double slash at the end to store the swap using the complete path
-	set directory^=$XDG_CACHE_BASEDIR/swap//
+	set directory^=$XDG_STATE_VIM/swap//
 endif
 
 " }}}
@@ -1212,7 +1429,7 @@ if exists('+undofile')
 
 	set undofile
 
-	let s:undo_dir=$XDG_CACHE_BASEDIR . "/undo"
+	let s:undo_dir=$XDG_STATE_VIM . "/undo"
 	if !isdirectory(s:undo_dir)
 		if exists("*mkdir")
 			call mkdir(s:undo_dir, 'p')
@@ -1221,7 +1438,7 @@ if exists('+undofile')
 
 	if isdirectory(s:undo_dir)
 		" where to store undo history // at the end keep hierarchy
-		set undodir^=$XDG_CACHE_BASEDIR/undo//
+		set undodir^=$XDG_STATE_VIM/undo//
 	endif
 endif
 
@@ -1239,7 +1456,11 @@ cabbrev %% <c-r>=<SID>referencedir()<cr>
 " autochdir (by hand)
 cabbrev %. <c-r>=expand("%:p:h")<cr>
 
+" %w to input current word in command line
 cabbrev %w <c-r>=expand("<cword>")<cr>
+
+cabbrev %b <c-r>=join(map(filter(range(0,bufnr('$')), 'buflisted(v:val)'), 'fnamemodify(bufname(v:val), ":p")'), ' ')<cr>
+
 " copy visual selection in register 'v' and allow to use for command mode
 xnoremap <silent> ,. "vy
 cabbrev %v <c-r>=getreg('v')<cr>
@@ -1289,20 +1510,26 @@ endfunction
 command! -nargs=1 -complete=command -bar -range Redir silent call Redir(<q-args>, <range>, <line1>, <line2>)
 
 " Prefer POSIX shell
-if &shell =~# 'fish$'
-	set shell=/bin/sh
-endif
+set shell=/bin/sh
 
 if !has('nvim') && has("gui_macvim")
-	let py3lib = reverse(split(glob("~/.local/pkg/dist/lib/libpython3*", 1), '\n'))
-	let py3exe = reverse(split(glob("~/.local/pkg/dist/bin/python3.[0-9][0-9]", 1), '\n'))
-	let py3exe += reverse(split(glob("~/.local/pkg/dist/bin/python3.[0-9]", 1), '\n'))
+	let py3lib = reverse(split(glob("~/.local/applications/pkg/dist/lib/libpython3*", 1), '\n'))
+	let py3exe = reverse(split(glob("~/.local/applications/pkg/dist/bin/python3.[0-9][0-9]", 1), '\n'))
+	let py3exe += reverse(split(glob("~/.local/applications/pkg/dist/bin/python3.[0-9]", 1), '\n'))
 	if ! empty(py3lib)
 		let py3home=fnamemodify(py3lib[0], ':p:h:h')
 		let &pythonthreehome=py3home
 		let &pythonthreedll=py3lib[0]
 	endif
 	let g:python3_host_prog=py3exe[0]
+endif
+
+if has('nvim')
+	" launching a command with ! is not interactive
+	command! -nargs=+ -complete=file T
+				\ tab new | setlocal nonumber nolist noswapfile bufhidden=wipe |
+				\ call termopen([<f-args>]) |
+				\ startinsert
 endif
 
 " }}}
@@ -1317,15 +1544,29 @@ elseif executable('ag')
 elseif executable('ack')
 	set grepprg=ack\ --nogroup\ --column\ --smart-case\ --nocolor\ --follow\ $*
 	set grepformat=%f:%l:%c:%m
+else
+	set grepprg=grep\ -R\ -n\ $*
 endif
 
 " function : Grep for :grep, add friendliness to it {{{
 " see https://gist.github.com/romainl/56f0c28ef953ffc157f36cc495947ab3
+
+function! CustomExpand(val)
+	" if starts with *, don't expand it
+	if a:val =~ '^\*'
+		return a:val
+	else
+		return expand(a:val)
+	endif
+endfunction
+
 function! Grep(...)
 	if exists('*expandcmd')
 		return system(join([&grepprg] + [expandcmd(join(a:000, ' '))], ' '))
 	else
-		return system(join([&grepprg] + a:000, ' '))
+		let l:args = copy(a:000)
+		let CExp = function("CustomExpand")
+		return system(join([&grepprg] + [join(map(l:args, 'CExp(v:val)'), ' ')], ' '))
 	endif
 endfunction
 " }}}
@@ -1341,8 +1582,16 @@ if has('quickfix') && has("autocmd")
 	" automatically show/open location-list or quickfix
 	augroup automaticquickfix
 		autocmd!
-		autocmd QuickFixCmdPost [^l]* cwindow
-		autocmd QuickFixCmdPost    l* lwindow
+
+		" automatically open the location/quickfix window after
+		" :make, :grep, ...
+		autocmd QuickFixCmdPost [^l]*  cclose|cwindow
+		autocmd QuickFixCmdPost    l*  lclose|lwindow
+
+		" automatically close when leaving
+		if exists('##QuitPre')
+			autocmd QuitPre * nested silent! lclose
+		endif
 	augroup END
 endif
 
@@ -1374,9 +1623,9 @@ endif
 set gdefault
 
 if has('nvim')
-	set shada+=n$XDG_CACHE_BASEDIR/principal.shada
+	set shada+=n$XDG_STATE_VIM/principal.shada
 else
-	set viminfo+=n$XDG_CACHE_BASEDIR/viminfo
+	set viminfo+=n$XDG_STATE_VIM/viminfo
 endif
 set viminfo^=!
 
@@ -1395,11 +1644,19 @@ if has('viminfo') && has('autocmd')
 	augroup END
 endif
 
-" }}}
+" Disable standard built-ins
+let g:loaded_netrw = 1
+let g:loaded_netrwPlugin = 1
+let g:loaded_netrwSettings = 1
+let g:loaded_netrwFileHandlers = 1
+let g:loaded_getscript = 1
+let g:loaded_getscriptPlugin = 1
+let g:loaded_vimball = 1
+let g:loaded_vimballPlugin = 1
+let g:loaded_logipat = 1
+let g:loaded_rrhelper = 1
 
-if filereadable($MYVIMRC.'local')
-	source $MYVIMRC.'local'
-endif
+" }}}
 
 if has('vim_starting')
 
@@ -1560,132 +1817,259 @@ endif
 
 " }}}
 
-" vim-slash @ 31aee09b7ea8893a18fa34f65e63e364fc998444 {{{
-" The MIT License (MIT)
+" vim-cool @ 0fc6d6cdcaabecca61f7d9df613ec24002509c23 {{{
 "
-" Copyright (c) 2016 Junegunn Choi
-"
-" Permission is hereby granted, free of charge, to any person obtaining a copy
-" of this software and associated documentation files (the "Software"), to deal
-" in the Software without restriction, including without limitation the rights
-" to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-" copies of the Software, and to permit persons to whom the Software is
-" furnished to do so, subject to the following conditions:
-"
-" The above copyright notice and this permission notice shall be included in
-" all copies or substantial portions of the Software.
-"
-" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-" IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-" FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-" AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-" LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-" OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-" THE SOFTWARE.
+" vim-cool - Disable hlsearch when you are done searching.
+" Maintainer:	romainl <romainlafourcade@gmail.com>
+" Version:	0.0.2
+" License:	MIT License
+" Location:	plugin/cool.vim
+" Website:	https://github.com/romainl/vim-cool
 
-function! s:wrap(seq)
-  if mode() == 'c' && stridx('/?', getcmdtype()) < 0
-    return a:seq
-  endif
-  silent! autocmd! slash
-  set hlsearch
-  return a:seq."\<plug>(slash-trailer)"
-endfunction
+if exists("g:loaded_cool") || v:version < 704 || &compatible
+    finish
+endif
+let g:loaded_cool = 1
 
-function! s:immobile(seq)
-  let s:winline = winline()
-  let s:pos = getpos('.')
-  return a:seq."\<plug>(slash-prev)"
-endfunction
+let s:save_cpo = &cpo
+set cpo&vim
 
-function! s:trailer()
-  augroup slash
+augroup Cool
     autocmd!
-    autocmd CursorMoved,CursorMovedI * set nohlsearch | autocmd! slash
-  augroup END
+augroup END
 
-  let seq = foldclosed('.') != -1 ? 'zv' : ''
-  if exists('s:winline')
-    let sdiff = winline() - s:winline
-    unlet s:winline
-    if sdiff > 0
-      let seq .= sdiff."\<c-e>"
-    elseif sdiff < 0
-      let seq .= -sdiff."\<c-y>"
+if exists('##OptionSet')
+    if !exists('*execute')
+        autocmd Cool OptionSet highlight let <SID>saveh = &highlight
     endif
-  endif
-  let after = len(maparg("<plug>(slash-after)", mode())) ? "\<plug>(slash-after)" : ''
-  return seq . after
-endfunction
+    " toggle coolness when hlsearch is toggled
+    autocmd Cool OptionSet hlsearch call <SID>PlayItCool(v:option_old, v:option_new)
+endif
 
-function! s:trailer_on_leave()
-  augroup slash
-    autocmd!
-    autocmd InsertLeave * call <sid>trailer()
-  augroup END
-  return ''
-endfunction
-
-function! s:prev()
-  return getpos('.') == s:pos ? '' : '``'
-endfunction
-
-function! s:escape(backward)
-  return '\V'.substitute(escape(@", '\' . (a:backward ? '?' : '/')), "\n", '\\n', 'g')
-endfunction
-
-function! Slash_blink(times, delay)
-  let s:blink = { 'ticks': 2 * a:times, 'delay': a:delay }
-
-  function! s:blink.tick(_)
-    let self.ticks -= 1
-    let active = self == s:blink && self.ticks > 0
-
-    if !self.clear() && active && &hlsearch
-      let [line, col] = [line('.'), col('.')]
-      let w:blink_id = matchadd('IncSearch',
-            \ printf('\%%%dl\%%>%dc\%%<%dc', line, max([0, col-2]), col+2))
+function! s:StartHL()
+    if !v:hlsearch || mode() isnot 'n'
+        return
     endif
-    if active
-      call timer_start(self.delay, self.tick)
-      if has('nvim')
-        call feedkeys("\<plug>(slash-nop)")
-      endif
+    let [pos, rpos] = [winsaveview(), getpos('.')]
+    silent! exe "keepjumps go".(line2byte('.')+col('.')-(v:searchforward ? 2 : 0))
+    try
+        silent keepjumps norm! n
+        if getpos('.') != rpos
+            throw 0
+        endif
+    catch /^\%(0$\|Vim\%(\w\|:Interrupt$\)\@!\)/
+        call <SID>StopHL()
+        return
+    finally
+        call winrestview(pos)
+    endtry
+    "if !get(g:,'CoolTotalMatches') || !exists('*reltimestr')
+    if !exists('*reltimestr')
+        return
     endif
-  endfunction
-
-  function! s:blink.clear()
-    if exists('w:blink_id')
-      call matchdelete(w:blink_id)
-      unlet w:blink_id
-      return 1
+    exe "silent! norm! :let g:cool_char=nr2char(screenchar(screenrow(),1))\<cr>"
+    let cool_char = remove(g:,'cool_char')
+    if cool_char !~ '[/?]'
+        return
     endif
-  endfunction
-
-  call s:blink.clear()
-  call s:blink.tick(0)
-  return ''
+    let [f, ws, now, noOf] = [0, &wrapscan, reltime(), [0,0]]
+    set nowrapscan
+    try
+        while f < 2
+            if reltimestr(reltime(now))[:-6] =~ '[1-9]'
+                " time >= 100ms
+                return
+            endif
+            let noOf[v:searchforward ? f : !f] += 1
+            try
+                silent exe "keepjumps norm! ".(f ? 'n' : 'N')
+            catch /^Vim[^)]\+):E38[45]\D/
+                call setpos('.',rpos)
+                let f += 1
+            endtry
+        endwhile
+    finally
+        call winrestview(pos)
+        let &wrapscan = ws
+    endtry
+    redraw|echo cool_char.@/ 'match' noOf[0] 'of' noOf[0] + noOf[1] - 1
 endfunction
 
-map      <expr> <plug>(slash-trailer) <sid>trailer()
-imap     <expr> <plug>(slash-trailer) <sid>trailer_on_leave()
-cnoremap        <plug>(slash-cr)      <cr>
-noremap  <expr> <plug>(slash-prev)    <sid>prev()
-inoremap        <plug>(slash-prev)    <nop>
-noremap!        <plug>(slash-nop)     <nop>
+function! s:StopHL()
+    if !v:hlsearch || mode() isnot 'n'
+        return
+    else
+        silent call feedkeys("\<Plug>(StopHL)", 'm')
+    endif
+endfunction
 
-" cmap <expr> <cr> <sid>wrap("\<cr>")
-map  <expr> n    <sid>wrap('n')
-map  <expr> N    <sid>wrap('N')
-map  <expr> gd   <sid>wrap('gd')
-map  <expr> gD   <sid>wrap('gD')
-map  <expr> *    <sid>wrap(<sid>immobile('*'))
-map  <expr> #    <sid>wrap(<sid>immobile('#'))
-map  <expr> g*   <sid>wrap(<sid>immobile('g*'))
-map  <expr> g#   <sid>wrap(<sid>immobile('g#'))
-xmap <expr> *    <sid>wrap(<sid>immobile("y/\<c-r>=<sid>escape(0)\<plug>(slash-cr)\<plug>(slash-cr)"))
-xmap <expr> #    <sid>wrap(<sid>immobile("y?\<c-r>=<sid>escape(1)\<plug>(slash-cr)\<plug>(slash-cr)"))
+if !exists('*execute')
+    let s:saveh = &highlight
+    " toggle highlighting, a workaround for :nohlsearch in autocmds
+    function! s:AuNohlsearch()
+        noautocmd set highlight+=l:-
+        autocmd Cool Insertleave *
+                    \ noautocmd let &highlight = s:saveh | autocmd! Cool InsertLeave *
+        return ''
+    endfunction
+endif
+
+function! s:PlayItCool(old, new)
+    if a:old == 0 && a:new == 1
+        " nohls --> hls
+        "   set up coolness
+        noremap <silent> <Plug>(StopHL) :<C-U>nohlsearch<cr>
+        if !exists('*execute')
+            noremap! <expr> <Plug>(StopHL) <SID>AuNohlsearch()
+        else
+            noremap! <expr> <Plug>(StopHL) execute('nohlsearch')[-1]
+        endif
+
+        autocmd Cool CursorMoved * call <SID>StartHL()
+        autocmd Cool InsertEnter * call <SID>StopHL()
+    elseif a:old == 1 && a:new == 0
+        " hls --> nohls
+        "   tear down coolness
+        nunmap <Plug>(StopHL)
+        unmap! <expr> <Plug>(StopHL)
+
+        autocmd! Cool CursorMoved
+        autocmd! Cool InsertEnter
+    else
+        " nohls --> nohls
+        "   do nothing
+        return
+    endif
+endfunction
+
+" play it cool
+call <SID>PlayItCool(0, &hlsearch)
+
+let &cpo = s:save_cpo
 
 " }}}
+
+" SearchInBuffers.vim @ 5ec44c4f3d8adc28a953001aedd4c12b49885e77 {{{
+"
+"                          :SIB - Search in buffers
+"                          ------------------------
+"                        (C) 2004 Francesco Bradascio
+"
+"                       http://fbradasc.altervista.org
+"                          mailto:fbradasc@yahoo.it
+"
+" DESCRIPTION
+"
+"     This plugin allow you to search the current search pattern in all the
+"     buffers currently opened into VIM.
+"
+" INSTALLATION
+"
+"     Copy this file into the VIM plugin directory.
+"
+" USAGE
+"
+"     Just do a search in whatsoever way into the current buffer and then
+"     run :SIB to process the same search in all the other open buffers.
+"
+"     Use the quickfix commands (:cn, :cp, ...) to navigate through the
+"     patterns found, :cclose to close the found's list, that's all.
+"     Do ':help quickfix.txt' for more details.
+"
+" COPYING POLICY
+"
+"     This library is free software; you can redistribute it and/or
+"     modify it under the terms of the GNU Lesser General Public
+"     License as published by the Free Software Foundation; either
+"     version 2.1 of the License, or (at your option) any later version.
+" 
+"     This library is distributed in the hope that it will be useful,
+"     but WITHOUT ANY WARRANTY; without even the implied warranty of
+"     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+"     Lesser General Public License for more details.
+" 
+"     You should have received a copy of the GNU Lesser General Public
+"     License along with this library; if not, write to the Free Software
+"     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+"
+function! s:RunSearchInBuffers(...)
+
+  let l:pattern = get(a:, 1, '')
+  let current = bufnr("%")
+  let files   = bufnr("$")
+  let i       = 1
+  let n       = 1
+  let found   = 0
+  let tmpfile = tempname()
+
+  cclose
+
+  if empty(l:pattern) && empty(@/)
+  	  return
+  endif
+
+  while i <= files      " loop over all files in buffer list
+    if bufexists(i) && buflisted(i)
+      silent exe "buffer" i
+      "
+      " start at the last char in the file and wrap for the
+      " first search to find match at start of file
+      "
+      normal G$
+      let flags = "w"
+      if !empty(l:pattern)
+	      silent let lineno = search(l:pattern, flags)
+      else
+	      silent let lineno = search(@/, flags)
+      endif
+      while lineno > 0
+        "
+        " appending to the tmp file the result of the search
+        "
+        exe "redir! >> " . tmpfile
+        silent echo expand('%') . ":" . lineno . ":" . getline(lineno)
+        redir END
+        "
+        " proceed with the search
+        "
+        let flags = "W"
+	if !empty(l:pattern)
+		silent let lineno = search(l:pattern, flags)
+	else
+		silent let lineno = search(@/, flags)
+	endif
+        "
+        " notify that something was found
+        "
+        let found = 1
+      endwhile
+      let n = n + 1
+    endif
+    let i = i + 1
+  endwhile
+
+  if found != 0     " if something was found show the list of items found
+    let old_efm = &efm
+    set efm=%f:%\\s%#%l:%m
+    execute "cex [] | silent! cfile " . tmpfile
+    let &efm = old_efm
+    botright copen
+    "
+    " jump to the first item found
+    "
+    cc
+    "
+    " remove the tmp file
+    "
+    call delete(tmpfile)
+  else              " nothing was found, restore the current buffer
+    silent exe "buffer" current
+  endif
+
+endfunction
+
+command! -nargs=? SearchBufs call s:RunSearchInBuffers(<q-args>)
+
+"  }}}
 
 " vim: set ft=vim ts=8 sw=8 tw=78 noet fdm=marker :

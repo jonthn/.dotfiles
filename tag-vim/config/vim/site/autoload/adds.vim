@@ -1,0 +1,1 @@
+../../../nvim/site/autoload/adds.vim
