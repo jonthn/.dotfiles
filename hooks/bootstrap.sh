@@ -1,34 +1,74 @@
 #!/bin/sh
 
-no_rcup=false
+# Safer script but don't be too verbose
+#set -Eeuxo pipefail
+set -Eeuo pipefail
+
 basedir=$(CDPATH='' cd -- "$(dirname -- "${0}")" 2>/dev/null; pwd -P 2>/dev/null)
 
-. "${basedir}/../tag-shell/config/shell/helpers/helpers.sh"
-. "${basedir}/../tag-shell/config/shell/bases.sh"
+. "${basedir}/../config/shell/helpers/helpers.sh"
 
+unset XDG_CONFIG_HOME XDG_CACHE_HOME XDG_DATA_HOME XDG_STATE_HOME
+hostn=$(ulimit -c 0;hostname 2>&-)
+dest="${HOME}"
+dest_hostn="${HOME}/._/${hostn}"
 
-
-if ! command -v rcup >/dev/null 2>&1; then
-	no_rcup=true
-	_temp_local_bin_path=$(CDPATH='' cd -- "${basedir}/../tag-rcm/local/bin" >/dev/null 2>&1; pwd -P 2>/dev/null)
-	_temp_local_man_path=$(CDPATH='' cd -- "${basedir}/../tag-rcm/local/man" >/dev/null 2>&1; pwd -P 2>/dev/null)
-	PATH=$(modify_colon_var "$PATH" "${_temp_local_bin_path}" pre)
-	MANPATH=$(modify_colon_var "$MANPATH" "${_temp_local_man_path}" post)
-	printf 'Change you env with :\nexport PATH="%s"\nexport MANPATH="%s"\n\n' "$PATH" "$MANPATH"
-	unset _temp_local_bin_path
-	unset _temp_local_man_path
-	printf "After updating your PATH you may use 'rcup'"
+if [ -d "${dest_hostn}" ]; then
+	dest="${dest_hostn}"
 fi
+
+if [ $# -ge 1 ] && [ -n "${1}" ]; then
+	dest="${1}"
+fi
+
+printf "Detected prefix to use : %s\nIf it's incorrect press Ctrl-C and provide the desired prefix (e.g. for this _host_ %s) otherwise simply press Enter.\n" "${dest}" "${dest_hostn}"
+
+# wait for input
+read
+
+if [ "${dest}" != "${HOME}" ] && [ ! -d "${dest}" ]; then
+	printf "Creates base XDG folder in %s\n" "${dest}"
+	install -v -d "${dest}"
+	install -v -d\
+		"${dest}/.config"\
+		"${dest}/.cache"\
+		"${dest}/.local/share"\
+		"${dest}/.local/state"
+fi
+
+if [ "${dest}" != "${HOME}" ] && [ ! -r "${dest}/.config/rcm/rcrc" -o -s "${dest}/.config/rcm/rcrc" ]; then
+	install -v -d "${dest}/.config/rcm"
+	cat <<-EOF > "${dest}/.config/rcm/rcrc"
+EXCLUDES=LICENSE
+UNDOTTED="Library/Fonts"
+#HOSTNAME=xxx
+TARGET=${dest}
+EOF
+fi
+
+printf "Base completed for '%s'\n" "${dest}"
+
+( . "${basedir}/../config/shell/bases.sh";\
+	PATH=${basedir}/../tag-HOME/local/bin:$PATH\
+	RCRC="${dest}/.config/rcm/rcrc"\
+	${basedir}/../tag-HOME/local/bin/rcup\
+	-v\
+	-x LICENSE\
+	-T "${dest}")
+
+printf "Initial 'rcup' completed for '%s'\n" "${dest}"
 
 available_tags=$(find "$basedir/../" -type d -name "tag-*" | sed s,^.*tag-,*\ ,)
 
-printf " 'rcup' with any combination of those tags : \\n%s" "$available_tags"
-printf "\\n"
-printf "Example: rcup -t git -t vim\\n"
-printf "Recommendations:\n"
-if ! "${no_rcup}"; then
-	printf '\nexport PATH="%s"\nexport MANPATH="%s"\n' "$PATH" "$MANPATH"
-fi
-printf "install -v -d %q\n" "${XDG_CONFIG_HOME:-$HOME/.config}/rcm"
-printf "%s > %q\n" 'printf "TAGS=\"rcm\"\n#HOSTNAME=xxx\n"' "${XDG_CONFIG_HOME:-$HOME/.config}/rcm/rcrc"
-printf "RCRC=\"%s\" rcup -t rcm\\n" "${XDG_CONFIG_HOME:-$HOME/.config}/rcm/rcrc"
+cat <<EOF
+'rcup' tags
+$available_tags
+#==============
+# 1. Make your shell environment (XDG*)
+. "${basedir}/../config/shell/bases.sh"
+# 2. rcup the tags you wish
+RCRC=${dest}/.config/rcm/rcrc PATH=${basedir}/../tag-HOME/local/bin:\$PATH rcup -t vim
+# 3. it's required to _have_ a basic shell in \$HOME for some hardcoded path
+PATH=${basedir}/../tag-HOME/local/bin:\$PATH ${basedir}/../tag-HOME/local/bin/rcup -v -x LICENSE -T "${HOME}" -t HOME
+EOF
+

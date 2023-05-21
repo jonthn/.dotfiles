@@ -1,0 +1,11 @@
+_current_host=$(ulimit -c 0 ; hostname 2>&-)
+
+if [ -n "${XDG_CONFIG_HOME-}" -a -r "${XDG_CONFIG_HOME-}/shell/configuration.sh" ]; then
+	source "${XDG_CONFIG_HOME-}/shell/configuration.sh"
+elif [ -r "${HOME}/._/${_shell_currenthost}/.config/shell/configuration.sh" ]; then
+	source "${HOME}/._/${_shell_currenthost}/.config/shell/configuration.sh"
+elif [ -r "${HOME}/.config/shell/configuration.sh" ]; then
+	source "${HOME}/.config/shell/configuration.sh"
+fi
+
+unset _current_host

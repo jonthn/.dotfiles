@@ -6,19 +6,35 @@ scriptencoding utf-8
 
 " XDG
 
+let $XDG_ROOT=$HOME .'/._/' . hostname()
+
+if !isdirectory($XDG_ROOT)
+	let $XDG_ROOT=$HOME
+endif
+
 if empty($XDG_CONFIG_HOME)
-	let $XDG_CONFIG_HOME = $HOME.'/.config'
+	if !(has('gui_running'))
+		echohl WarningMsg | echomsg "empty variable XDG_CONFIG_HOME" | echohl NONE
+	endif
+	let $XDG_CONFIG_HOME = $XDG_ROOT.'/.config'
 endif
 if empty($XDG_STATE_HOME)
-	echohl WarningMsg | echomsg "empty variable XDG_STATE_HOME" | echohl NONE
-	let $XDG_STATE_HOME = $HOME.'/.local/state'
+	if !(has('gui_running'))
+		echohl WarningMsg | echomsg "empty variable XDG_STATE_HOME" | echohl NONE
+	endif
+	let $XDG_STATE_HOME = $XDG_ROOT.'/.local/state'
 endif
 if empty($XDG_CACHE_HOME)
-	echohl WarningMsg | echomsg "empty variable XDG_CACHE_HOME" | echohl NONE
-	let $XDG_CACHE_HOME = $HOME.'/.cache'
+	if !(has('gui_running'))
+		echohl WarningMsg | echomsg "empty variable XDG_CACHE_HOME" | echohl NONE
+	endif
+	let $XDG_CACHE_HOME = $XDG_ROOT.'/.cache'
 endif
 if empty($XDG_DATA_HOME)
-	let $XDG_DATA_HOME = $HOME.'/.local/share'
+	if !(has('gui_running'))
+		echohl WarningMsg | echomsg "empty variable XDG_DATA_HOME" | echohl NONE
+	endif
+	let $XDG_DATA_HOME = $XDG_ROOT.'/.local/share'
 endif
 
 if has('nvim')
@@ -29,6 +45,13 @@ endif
 
 if has('nvim')
 	set runtimepath^=$XDG_CONFIG_HOME/nvim/site
+else
+	set runtimepath^=$XDG_CONFIG_HOME/vim/site
+endif
+
+if !has('nvim')
+	set packpath^=$XDG_DATA_HOME/vim,$XDG_CONFIG_HOME/vim
+	set packpath+=$XDG_CONFIG_HOME/vim/after,$XDG_DATA_HOME/vim/after
 endif
 
 if !isdirectory($XDG_DATA_HOME)
@@ -256,6 +279,8 @@ if exists('g:terminal_ansi_colors')
 	unlet g:terminal_ansi_colors
 endif
 
+let base16_colorspace=256 " Access colors present in 256 colorspace
+
 " 'default' colorschemes
 let s:colorschemes_default = [ 'habamax', 'peachpuff', 'slate', 'desert', 'delek' ]
 
@@ -471,6 +496,8 @@ if has('conceal')
 endif
 
 if has('spell')
+	call mkdir($XDG_DATA_HOME."/vim/spell", 'p')
+
 	" maximum 5 suggestion in order to correct an error
 	set spellsuggest=5
 	if !has('nvim')
@@ -1625,7 +1652,9 @@ set gdefault
 if has('nvim')
 	set shada+=n$XDG_STATE_VIM/principal.shada
 else
-	set viminfo+=n$XDG_STATE_VIM/viminfo
+	set viewdir=$XDG_STATE_VIM/view | call mkdir(&viewdir,   'p')
+	"set viminfo+=n$XDG_STATE_VIM/viminfo
+	set viminfofile=$XDG_STATE_VIM/viminfo
 endif
 set viminfo^=!
 
@@ -1643,6 +1672,8 @@ if has('viminfo') && has('autocmd')
 					\ setlocal viminfo=
 	augroup END
 endif
+
+" let g:netrw_home = $XDG_DATA_HOME."/vim"
 
 " Disable standard built-ins
 let g:loaded_netrw = 1
@@ -1698,13 +1729,13 @@ if has('vim_starting')
 
 endif
 
-" vim-commentary @ f8238d70f873969fb41bf6a6b07ca63a4c0b82b1 {{{
+" vim-commentary @ e87cd90dc09c2a203e13af9704bd0ef79303d755 {{{
 " commentary.vim - Comment stuff out
 " Maintainer:   Tim Pope <http://tpo.pe/>
 " Version:      1.3
 " GetLatestVimScripts: 3695 1 :AutoInstall: commentary.vim
 
-if exists("g:loaded_commentary") || v:version < 700
+if exists("g:loaded_commentary") || v:version < 703
   finish
 endif
 let g:loaded_commentary = 1
@@ -1719,7 +1750,7 @@ function! s:strip_white_space(l,r,line) abort
   if l[-1:] ==# ' ' && stridx(a:line,l) == -1 && stridx(a:line,l[0:-2]) == 0
     let l = l[:-2]
   endif
-  if r[0] ==# ' ' && a:line[-strlen(r):] != r && a:line[1-strlen(r):] == r[1:]
+  if r[0] ==# ' ' && (' ' . a:line)[-strlen(r)-1:] != r && a:line[-strlen(r):] == r[1:]
     let r = r[1:]
   endif
   return [l, r]
@@ -1737,6 +1768,7 @@ function! s:go(...) abort
 
   let [l, r] = s:surroundings()
   let uncomment = 2
+  let force_uncomment = a:0 > 2 && a:3
   for lnum in range(lnum1,lnum2)
     let line = matchstr(getline(lnum),'\S.*\s\@<!')
     let [l, r] = s:strip_white_space(l,r,line)
@@ -1751,6 +1783,7 @@ function! s:go(...) abort
     let indent = '^\s*'
   endif
 
+  let lines = []
   for lnum in range(lnum1,lnum2)
     let line = getline(lnum)
     if strlen(r) > 2 && l.r !~# '\\'
@@ -1758,13 +1791,18 @@ function! s:go(...) abort
             \'\M' . substitute(l, '\ze\S\s*$', '\\zs\\d\\*\\ze', '') . '\|' . substitute(r, '\S\zs', '\\zs\\d\\*\\ze', ''),
             \'\=substitute(submatch(0)+1-uncomment,"^0$\\|^-\\d*$","","")','g')
     endif
-    if uncomment
+    if force_uncomment
+      if line =~ '^\s*' . l
+        let line = substitute(line,'\S.*\s\@<!','\=submatch(0)[strlen(l):-strlen(r)-1]','')
+      endif
+    elseif uncomment
       let line = substitute(line,'\S.*\s\@<!','\=submatch(0)[strlen(l):-strlen(r)-1]','')
     else
       let line = substitute(line,'^\%('.matchstr(getline(lnum1),indent).'\|\s*\)\zs.*\S\@<=','\=l.submatch(0).r','')
     endif
-    call setline(lnum,line)
+    call add(lines, line)
   endfor
+  call setline(lnum1, lines)
   let modelines = &modelines
   try
     set modelines=0
@@ -1796,7 +1834,7 @@ function! s:textobject(inner) abort
   endif
 endfunction
 
-command! -range -bar Commentary call s:go(<line1>,<line2>)
+command! -range -bar -bang Commentary call s:go(<line1>,<line2>,<bang>0)
 xnoremap <expr>   <Plug>Commentary     <SID>go()
 nnoremap <expr>   <Plug>Commentary     <SID>go()
 nnoremap <expr>   <Plug>CommentaryLine <SID>go() . '_'
@@ -1809,16 +1847,12 @@ if !hasmapto('<Plug>Commentary') || maparg('gc','n') ==# ''
   nmap gc  <Plug>Commentary
   omap gc  <Plug>Commentary
   nmap gcc <Plug>CommentaryLine
-  if maparg('c','n') ==# '' && !exists('v:operator')
-    nmap cgc <Plug>ChangeCommentary
-  endif
   nmap gcu <Plug>Commentary<Plug>Commentary
 endif
 
 " }}}
 
-" vim-cool @ 0fc6d6cdcaabecca61f7d9df613ec24002509c23 {{{
-"
+" vim-cool @ 77aa646b63c0a2fe017bcdb033154c5fba4f947b {{{
 " vim-cool - Disable hlsearch when you are done searching.
 " Maintainer:	romainl <romainlafourcade@gmail.com>
 " Version:	0.0.2
@@ -1850,6 +1884,7 @@ function! s:StartHL()
     if !v:hlsearch || mode() isnot 'n'
         return
     endif
+    let g:cool_is_searching = 1
     let [pos, rpos] = [winsaveview(), getpos('.')]
     silent! exe "keepjumps go".(line2byte('.')+col('.')-(v:searchforward ? 2 : 0))
     try
@@ -1863,8 +1898,7 @@ function! s:StartHL()
     finally
         call winrestview(pos)
     endtry
-    "if !get(g:,'CoolTotalMatches') || !exists('*reltimestr')
-    if !exists('*reltimestr')
+    if !get(g:,'cool_total_matches') || !exists('*reltimestr')
         return
     endif
     exe "silent! norm! :let g:cool_char=nr2char(screenchar(screenrow(),1))\<cr>"
@@ -1896,9 +1930,10 @@ function! s:StartHL()
 endfunction
 
 function! s:StopHL()
-    if !v:hlsearch || mode() isnot 'n'
+    if !v:hlsearch || mode() isnot 'n' || &buftype == 'terminal'
         return
     else
+        let g:cool_is_searching = 0
         silent call feedkeys("\<Plug>(StopHL)", 'm')
     endif
 endfunction

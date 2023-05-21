@@ -146,9 +146,9 @@ shf_pkgsrc_bootstrap()
 
 	local bootstraptmp=$(mktemp -q)
 
-	pkgsrc_fragment=""
-	if [ -r "${HOME}/.local/share/pkgsrc/pkgsrc.fragment.mk" ]; then
-		pkgsrc_fragment="${HOME}/.local/share/pkgsrc/pkgsrc.fragment.mk"
+	local pkgsrc_fragment=""
+	if [ -r "${XDG_DATA_HOME}/pkgsrc/pkgsrc.fragment.mk" ]; then
+		pkgsrc_fragment="${XDG_DATA_HOME}/pkgsrc/pkgsrc.fragment.mk"
 	fi
 
 	# Change sh_shell for bash on Linux

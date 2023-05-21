@@ -1,13 +1,13 @@
 if has('nvim')
-	let s:datahome = $XDG_CONFIG_HOME.'/nvim/site'
+	let s:xdgconfig = $XDG_CONFIG_HOME.'/nvim/site'
 else
-	let s:datahome = $XDG_CONFIG_HOME.'/vim/site'
+	let s:xdgconfig = $XDG_CONFIG_HOME.'/vim/site'
 endif
 let s:plugins_manager_url = 'https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
-let s:plugins_manager_corefile = s:datahome . '/' . 'autoload/plug.vim'
-let $ADDS = s:datahome . '/' . 'autoload/adds.vim'
-let $adds = s:datahome . '/' . 'autoload/adds.vim'
-let $PLUGINS = s:datahome . '/' . 'autoload/adds.vim'
+let s:plugins_manager_corefile = s:xdgconfig . '/' . 'autoload/plug.vim'
+let $ADDS = s:xdgconfig . '/' . 'autoload/adds.vim'
+let $adds = s:xdgconfig . '/' . 'autoload/adds.vim'
+let $PLUGINS = s:xdgconfig . '/' . 'autoload/adds.vim'
 let s:use_plugins = 0
 
 " define a group `adds` and initialize.
@@ -252,7 +252,7 @@ function! adds#setup()
 		Plug 'Shougo/vinarise.vim'
 	endif
 
-	" visual start search and enable/disable search highlight
+	" visual star search and enable/disable search highlight
 	" packaged in the (n)vimrc as fallback
 	" Plug 'romainl/vim-cool'
 	" Plug 'PeterRincker/vim-searchlight'
@@ -326,10 +326,10 @@ function! adds#before_load()
 	" Here set some global variable affecting loading and settings for plugins
 
 	" vim-better-whitespace
-	let g:better_whitespace_filetypes_blacklist = [ 'vim-plug', 'unite', 'denite' ]
+	let g:better_whitespace_filetypes_blacklist = [ 'vim-plug' ]
 
 	" vim-cool
-	let g:CoolTotalMatches = 1
+	let g:cool_total_matches = 1
 
 	" vim-polyglot
 	let g:polyglot_disabled = ['sensible']
@@ -455,22 +455,6 @@ function! adds#configure()
 
 	endif
 
-
-	" if adds#available('neosnippet')
-
-	" 	if "\<Space>" == g:mapleader
-	" 		imap ,l     <Plug>(neosnippet_expand_or_jump)
-	" 		smap ,l     <Plug>(neosnippet_expand_or_jump)
-	" 		xmap ,l     <Plug>(neosnippet_expand_target)
-	" 	else
-	" 		imap <leader>l     <Plug>(neosnippet_expand_or_jump)
-	" 		smap <leader>l     <Plug>(neosnippet_expand_or_jump)
-	" 		xmap <leader>l     <Plug>(neosnippet_expand_target)
-	" 	endif
-
-	" 	autocmd vimrc InsertLeave * NeoSnippetClearMarkers
-
-	" endif
 
 	if adds#available('vim-vsnip')
 
@@ -693,7 +677,18 @@ EOF
 				-- Accept currently selected item.
 				-- Set `select` to `false` to only confirm
 				--   explicitly selected items.
-				['<CR>'] = cmp.mapping.confirm({ select = true }),
+				-- ['<CR>'] = cmp.mapping.confirm({ select = true }),
+				['<CR>'] = cmp.mapping({
+					i = function(fallback)
+						if cmp.visible() and cmp.get_active_entry() then
+							cmp.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = false })
+						else
+							fallback()
+						end
+					end,
+					s = cmp.mapping.confirm({ select = true }),
+					c = cmp.mapping.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = true })
+				}),
 			}),
 			sources = cmp.config.sources({
 				{ name = 'nvim_lsp' },
@@ -844,14 +839,6 @@ EOF
 			autocmd adds VimEnter *  silent! RainbowParentheses
 		endif
 	endif
-
-	" if adds#available('two-firewatch')
-	" 	augroup colorscheme_custom_two_firewatch
-	" 		autocmd!
-	" 		autocmd ColorScheme two-firewatch highlight! link SignColumn LineNr
-	" 	augroup END
-	" endif
-
 
 	if adds#available('vim-devdocs')
 		if has("autocmd")

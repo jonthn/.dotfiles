@@ -1,0 +1,49 @@
+" Make Vim follows XDG
+" inspired by https://github.com/kaleb/vim-files/blob/master/xdg.vim
+
+" if empty($XDG_CACHE_HOME)
+"         echohl WarningMsg | echomsg "empty variable XDG_CACHE_HOME" | echohl NONE
+"         let $XDG_CACHE_HOME = $HOME.'/.cache'
+" endif
+" if empty($XDG_CONFIG_HOME)
+"         echohl WarningMsg | echomsg "empty variable XDG_CONFIG_HOME" | echohl NONE
+"         let $XDG_CONFIG_HOME = $HOME.'/.config'
+" endif
+" if empty($XDG_DATA_HOME)
+"         echohl WarningMsg | echomsg "empty variable XDG_DATA_HOME" | echohl NONE
+"         let $XDG_DATA_HOME = $HOME.'/.local/share'
+" endif
+" if empty($XDG_STATE_HOME)
+"         echohl WarningMsg | echomsg "empty variable XDG_STATE_HOME" | echohl NONE
+"         let $XDG_STATE_HOME = $HOME.'/.local/state'
+" endif
+
+set runtimepath-=~/.vim
+set runtimepath^=$XDG_CONFIG_HOME/vim
+set runtimepath+=$XDG_DATA_HOME/vim
+set runtimepath-=~/.vim/after
+set runtimepath+=$XDG_CONFIG_HOME/vim/after
+set runtimepath+=$XDG_DATA_HOME/vim/after
+
+" managed in $MYVIMRC but for reference
+"set packpath^=$XDG_DATA_HOME/vim,$XDG_CONFIG_HOME/vim
+"set packpath+=$XDG_CONFIG_HOME/vim/after,$XDG_DATA_HOME/vim/after
+
+"set backupdir=$XDG_STATE_HOME/vim/backup | call mkdir(&backupdir, 'p')
+"set directory=$XDG_STATE_HOME/vim/swap   | call mkdir(&directory, 'p')
+"set undodir=$XDG_STATE_HOME/vim/undo     | call mkdir(&undodir,   'p')
+"set viewdir=$XDG_STATE_HOME/vim/view     | call mkdir(&viewdir,   'p')
+"if !has('nvim') | set viminfofile=$XDG_STATE_HOME/vim/viminfo | endif
+
+
+if filereadable(expand($HOME .'/._/' . hostname() . '/.config/vim/vimrc'))
+	let $MYVIMRC=$HOME .'/._/' . hostname() . '/.config/vim/vimrc'
+elseif filereadable(expand($XDG_CONFIG_HOME . '/vim/vimrc'))
+	let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc"
+else
+	let $MYVIMRC="$HOME/.config/vim/vimrc"
+endif
+
+if filereadable(expand($MYVIMRC))
+	source $MYVIMRC
+endif

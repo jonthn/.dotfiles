@@ -2,7 +2,7 @@
 
 local _new_env_content
 
-export CARGO_INSTALL_ROOT="${_base_localprefix}/rust"
+export CARGO_INSTALL_ROOT="${HSH}/rust"
 export CARGO_HOME=${XDG_CACHE_HOME}/cargo
 export RUSTUP_HOME=${XDG_CACHE_HOME}/rustup
 

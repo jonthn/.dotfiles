@@ -2,8 +2,8 @@
 
 local _new_env_content
 
-PKGSRC_DIST_STABLE="${_base_localprefix}/pkg-stable"
-PKGSRC_DIST_CURRENT="${_base_localprefix}/pkg-current"
+PKGSRC_DIST_STABLE="${HSH}/pkg.stable"
+PKGSRC_DIST_CURRENT="${HSH}/pkg"
 
 PKGSRC_STABLE="${XDG_CACHE_HOME}/pkgsrc/stable"
 PKGSRC_CURRENT="${XDG_CACHE_HOME}/pkgsrc/current"

@@ -1,6 +1,6 @@
 # add tmux terminfo directory
 
-export TERMINFO_DIRS=$TERMINFO_DIRS:$HOME/.local/share/terminfo
+export TERMINFO_DIRS=$TERMINFO_DIRS:${XDG_DATA_HOME}/terminfo
 
 alias ta="tmux attach"
 
